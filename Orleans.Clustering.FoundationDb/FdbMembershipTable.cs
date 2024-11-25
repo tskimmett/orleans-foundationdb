@@ -21,18 +21,6 @@ public class FdbMembershipTable : IMembershipTable
 
     string ClusterId => _clusterOptions.ClusterId;
 
-    Task WriteAsync(Func<IFdbTransaction, FdbDirectorySubspace, Task> write)
-        => _fdb.WriteAsync(async tx => await write(tx, await GetDirectory(tx)), new());
-
-    Task<T> ReadWriteAsync<T>(Func<IFdbTransaction, FdbDirectorySubspace, Task<T>> readWrite)
-        => _fdb.ReadWriteAsync(async tx => await readWrite(tx, await GetDirectory(tx)), new());
-
-    Task WriteAsync(Action<IFdbTransaction, FdbDirectorySubspace> write)
-        => _fdb.WriteAsync(async tx => write(tx, await GetDirectory(tx)), new());
-
-    Task<T> ReadAsync<T>(Func<IFdbReadOnlyTransaction, FdbDirectorySubspace, Task<T>> read)
-        => _fdb.ReadAsync(async tx => await read(tx, await GetDirectory(tx)), new());
-
     async Task<int> GetVersion(IFdbReadOnlyTransaction tx)
     {
         var res = await tx.GetAsync(VersionKey(await GetDirectory(tx)));
@@ -45,9 +33,7 @@ public class FdbMembershipTable : IMembershipTable
         return WriteAsync((t, dir) =>
         {
             if (tryInitTableVersion)
-            {
                 t.Set(VersionKey(dir), JsonSerializer.SerializeToUtf8Bytes(new TableVersion(0, "0")));
-            }
         });
     }
 
@@ -76,8 +62,6 @@ public class FdbMembershipTable : IMembershipTable
         var data = JsonSerializer.SerializeToUtf8Bytes(entry);
         return ReadWriteAsync(async (tx, dir) =>
         {
-            var res = await tx.GetAsync(VersionKey(dir));
-
             if (await GetVersion(tx) != tableVersion.Version - 1)
                 return false;
 
@@ -92,31 +76,21 @@ public class FdbMembershipTable : IMembershipTable
         });
     }
 
-    Slice MemberKey(FdbDirectorySubspace dir, MembershipEntry entry)
-    {
-        return dir.Encode(ClusterId, "member", entry.SiloAddress.ToString());
-    }
-
-    Slice MemberEtagKey(FdbDirectorySubspace dir, MembershipEntry entry)
-    {
-        return dir.Encode(ClusterId, "member", entry.SiloAddress.ToString(), "etag");
-    }
-
     public async Task<MembershipTableData> ReadAll()
     {
-        var res = await ReadAsync(async (tx, dir) =>
+        var (version, members) = await ReadAsync(async (tx, dir) =>
         {
-            var versionTask = GetVersion(tx);
+            var versionTask = tx.GetAsync(VersionKey(dir));
             var rangeTask = tx.GetRangeAsync(dir.PackRange((ClusterId, "member")), null);
             await Task.WhenAll(versionTask, rangeTask);
             return (version: versionTask.Result, members: rangeTask.Result.Select(e => e.Value));
         });
 
-        var memberList = res.members
+        var memberList = members
             .Chunk(2)   // collate [data, etag]
             .Select(member => Tuple.Create(Deserialize<MembershipEntry>(member.First()), member.Last().ToUuid80().ToString()))
             .ToList();
-        return new MembershipTableData(memberList, new TableVersion(res.version, res.version.ToString()));
+        return new MembershipTableData(memberList, Deserialize<TableVersion>(version));
     }
 
     static T Deserialize<T>(Slice data) => JsonSerializer.Deserialize<T>(data.ToStream())!;
@@ -140,12 +114,11 @@ public class FdbMembershipTable : IMembershipTable
 
     public Task UpdateIAmAlive(MembershipEntry entry)
     {
-        var aliveTime = entry.IAmAliveTime;
         return WriteAsync(async (tx, dir) =>
         {
             var entryKey = MemberKey(dir, entry);
             var item = Deserialize<MembershipEntry>(await tx.GetAsync(entryKey));
-            item!.IAmAliveTime = aliveTime;
+            item!.IAmAliveTime = entry.IAmAliveTime;
             tx.Set(entryKey, JsonSerializer.SerializeToUtf8Bytes(item));
         });
     }
@@ -154,6 +127,9 @@ public class FdbMembershipTable : IMembershipTable
     {
         return ReadWriteAsync(async (tx, dir) =>
         {
+            if (await GetVersion(tx) != tableVersion.Version - 1)
+                return false;
+
             var etagKey = MemberEtagKey(dir, entry);
             var dbEtag = await tx.GetAsync(etagKey);
             // Cannot update nonexistent entry
@@ -179,4 +155,26 @@ public class FdbMembershipTable : IMembershipTable
     {
         return dir.Pack((ClusterId, "version"));
     }
+
+    Slice MemberKey(FdbDirectorySubspace dir, MembershipEntry entry)
+    {
+        return dir.Encode(ClusterId, "member", entry.SiloAddress.ToString());
+    }
+
+    Slice MemberEtagKey(FdbDirectorySubspace dir, MembershipEntry entry)
+    {
+        return dir.Encode(ClusterId, "member", entry.SiloAddress.ToString(), "etag");
+    }
+
+    Task WriteAsync(Func<IFdbTransaction, FdbDirectorySubspace, Task> write)
+        => _fdb.WriteAsync(async tx => await write(tx, await GetDirectory(tx)), new());
+
+    Task<T> ReadWriteAsync<T>(Func<IFdbTransaction, FdbDirectorySubspace, Task<T>> readWrite)
+        => _fdb.ReadWriteAsync(async tx => await readWrite(tx, await GetDirectory(tx)), new());
+
+    Task WriteAsync(Action<IFdbTransaction, FdbDirectorySubspace> write)
+        => _fdb.WriteAsync(async tx => write(tx, await GetDirectory(tx)), new());
+
+    Task<T> ReadAsync<T>(Func<IFdbReadOnlyTransaction, FdbDirectorySubspace, Task<T>> read)
+        => _fdb.ReadAsync(async tx => await read(tx, await GetDirectory(tx)), new());
 }
