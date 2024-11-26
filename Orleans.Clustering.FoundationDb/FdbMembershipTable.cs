@@ -1,7 +1,7 @@
-﻿using System.Text.Json;
-using Doxense.Collections.Tuples;
+﻿using Doxense.Collections.Tuples;
 using FoundationDB.Client;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Orleans.Configuration;
 using Orleans.Runtime;
 
@@ -11,68 +11,68 @@ public class FdbMembershipTable : IMembershipTable
 {
     const string DirName = "orleans-clustering";
     readonly ClusterOptions _clusterOptions;
+    readonly JsonSerializerSettings _jsonSerializerSettings;
+
     readonly IFdbDatabaseProvider _fdb;
 
     public FdbMembershipTable(IFdbDatabaseProvider fdb, IOptions<ClusterOptions> clusterOptions)
     {
         _fdb = fdb;
         _clusterOptions = clusterOptions.Value;
+        _jsonSerializerSettings = JsonSettings.JsonSerializerSettings;
     }
 
     string ClusterId => _clusterOptions.ClusterId;
 
+    public bool IsInitialized { get; private set; }
+
+
     async Task<int> GetVersion(IFdbReadOnlyTransaction tx)
     {
         var res = await tx.GetAsync(VersionKey(await GetDirectory(tx)));
-        var dbVersion = await JsonSerializer.DeserializeAsync<TableVersion>(res.ToStream());
+        var dbVersion = Deserialize<TableVersion>(res);
         return dbVersion!.Version;
     }
 
-    public Task InitializeMembershipTable(bool tryInitTableVersion)
+    public async Task InitializeMembershipTable(bool tryInitTableVersion)
     {
-        return WriteAsync((t, dir) =>
+        if (tryInitTableVersion)
         {
-            if (tryInitTableVersion)
-                t.Set(VersionKey(dir), JsonSerializer.SerializeToUtf8Bytes(new TableVersion(0, "0")));
-        });
+            await _fdb.WriteAsync(async tx =>
+            {
+                var dir = await EnsureDirectory(tx);
+                tx.Set(VersionKey(dir), Serialize(new TableVersion(0, "0")));
+            }, new());
+        }
+        IsInitialized = true;
     }
 
     public Task CleanupDefunctSiloEntries(DateTimeOffset beforeDate)
     {
+        var etagSlice = Slice.FromString("etag");
         return WriteAsync(async (tx, dir) =>
         {
             var entries = (await tx.GetRangeAsync(dir.PackRange((ClusterId, "member")), null))
+                .Where(e => dir.Unpack(e.Key).Last<string>() != "etag")
                 .Select(e => Deserialize<MembershipEntry>(e.Value))
                 .Where(member => member.Status != SiloStatus.Active
                     && member.StartTime < beforeDate
                     && member.IAmAliveTime < beforeDate);
 
             foreach (var defunct in entries)
+            {
                 tx.Clear(MemberKey(dir, defunct));
+                tx.Clear(MemberEtagKey(dir, defunct));
+            }
         });
     }
 
     public Task DeleteMembershipTableEntries(string clusterId)
     {
-        return WriteAsync((t, dir) => t.ClearRange(dir.PackRange(STuple.Create(clusterId))));
-    }
-
-    public Task<bool> InsertRow(MembershipEntry entry, TableVersion tableVersion)
-    {
-        var data = JsonSerializer.SerializeToUtf8Bytes(entry);
-        return ReadWriteAsync(async (tx, dir) =>
+        return WriteAsync((t, dir) =>
         {
-            if (await GetVersion(tx) != tableVersion.Version - 1)
-                return false;
-
-            var entryKey = MemberKey(dir, entry);
-            // Entry already exists
-            if (await tx.GetAsync(entryKey) != Slice.Nil)
-                return false;
-
-            tx.Set(VersionKey(dir), JsonSerializer.SerializeToUtf8Bytes(tableVersion));
-            tx.Set(entryKey, data);
-            return true;
+            if (dir != null)
+                t.ClearRange(dir.PackRange(STuple.Create(clusterId)));
         });
     }
 
@@ -81,19 +81,21 @@ public class FdbMembershipTable : IMembershipTable
         var (version, members) = await ReadAsync(async (tx, dir) =>
         {
             var versionTask = tx.GetAsync(VersionKey(dir));
-            var rangeTask = tx.GetRangeAsync(dir.PackRange((ClusterId, "member")), null);
+            var rangeTask = tx.GetRange(dir.PackRange((ClusterId, "member"))).ToListAsync();
             await Task.WhenAll(versionTask, rangeTask);
-            return (version: versionTask.Result, members: rangeTask.Result.Select(e => e.Value));
+            return (version: versionTask.Result, members: rangeTask.Result);
         });
 
         var memberList = members
             .Chunk(2)   // collate [data, etag]
-            .Select(member => Tuple.Create(Deserialize<MembershipEntry>(member.First()), member.Last().ToUuid80().ToString()))
+            .Select(member => Tuple.Create(Deserialize<MembershipEntry>(member.First().Value), member.Last().Value.ToUuid80().ToString()))
             .ToList();
         return new MembershipTableData(memberList, Deserialize<TableVersion>(version));
     }
 
-    static T Deserialize<T>(Slice data) => JsonSerializer.Deserialize<T>(data.ToStream())!;
+    T Deserialize<T>(Slice data) => JsonConvert.DeserializeObject<T>(data.ToStringUtf8()!, _jsonSerializerSettings)!;
+
+    Slice Serialize<T>(T item) => Slice.FromStringUtf8(JsonConvert.SerializeObject(item, _jsonSerializerSettings));
 
     public async Task<MembershipTableData> ReadRow(SiloAddress key)
     {
@@ -119,9 +121,30 @@ public class FdbMembershipTable : IMembershipTable
             var entryKey = MemberKey(dir, entry);
             var item = Deserialize<MembershipEntry>(await tx.GetAsync(entryKey));
             item!.IAmAliveTime = entry.IAmAliveTime;
-            tx.Set(entryKey, JsonSerializer.SerializeToUtf8Bytes(item));
+            tx.Set(entryKey, Serialize(item));
         });
     }
+
+    public Task<bool> InsertRow(MembershipEntry entry, TableVersion tableVersion)
+    {
+        var versionData = Serialize(tableVersion);
+        return ReadWriteAsync(async (tx, dir) =>
+        {
+            if (await GetVersion(tx) != tableVersion.Version - 1)
+                return false;
+
+            var entryKey = MemberKey(dir, entry);
+            // Entry already exists
+            if (await tx.GetAsync(entryKey) != Slice.Nil)
+                return false;
+
+            tx.Set(VersionKey(dir), versionData);
+            tx.Set(entryKey, Serialize(entry));
+            tx.Set(MemberEtagKey(dir, entry), tx.CreateVersionStamp().ToSlice());
+            return true;
+        });
+    }
+
 
     public Task<bool> UpdateRow(MembershipEntry entry, string etag, TableVersion tableVersion)
     {
@@ -139,8 +162,9 @@ public class FdbMembershipTable : IMembershipTable
             if (etag != dbEtag.ToUuid80().ToString())
                 return false;
 
+            tx.Set(VersionKey(dir), Serialize(tableVersion));
+            tx.Set(MemberKey(dir, entry), Serialize(entry));
             tx.Set(etagKey, tx.CreateVersionStamp().ToSlice());
-            tx.Set(MemberKey(dir, entry), JsonSerializer.SerializeToUtf8Bytes(entry));
             return true;
         });
     }
@@ -148,6 +172,12 @@ public class FdbMembershipTable : IMembershipTable
     async ValueTask<FdbDirectorySubspace> GetDirectory(IFdbReadOnlyTransaction t)
     {
         var subspace = await _fdb.Root[DirName].Resolve(t);
+        return subspace!;
+    }
+
+    async ValueTask<FdbDirectorySubspace> EnsureDirectory(IFdbTransaction t)
+    {
+        var subspace = await _fdb.Root[DirName].CreateOrOpenAsync(t);
         return subspace!;
     }
 
