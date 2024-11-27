@@ -31,7 +31,6 @@ public class ClusteringTests : MembershipTableTestsBase, IAsyncLifetime
 	{
 		var options = Options.Create<FdbDatabaseProviderOptions>(new()
 		{
-			AutoStart = true,
 			ConnectionOptions = new()
 			{
 				ConnectionString = GetConnectionString().Result,

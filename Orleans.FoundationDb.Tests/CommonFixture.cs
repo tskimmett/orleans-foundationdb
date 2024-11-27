@@ -14,7 +14,7 @@ namespace Orleans.FoundationDb.Tests;
 
 public class CommonFixture : TestEnvironmentFixture
 {
-	private IProviderRuntime DefaultProviderRuntime { get; }
+	IProviderRuntime DefaultProviderRuntime { get; }
 
 	public CommonFixture()
 	{
@@ -45,7 +45,7 @@ public class CommonFixture : TestEnvironmentFixture
 			fdb,
 			grainStorageSerializer,
 			Options.Create(clusterOptions),
-			DefaultProviderRuntime.ServiceProvider.GetService<ILogger<FdbGrainStorage>>()
+			DefaultProviderRuntime.ServiceProvider.GetRequiredService<ILogger<FdbGrainStorage>>()
 		);
 		ISiloLifecycleSubject siloLifeCycle = new SiloLifecycleSubject(NullLoggerFactory.Instance.CreateLogger<SiloLifecycleSubject>());
 		storageProvider.Participate(siloLifeCycle);

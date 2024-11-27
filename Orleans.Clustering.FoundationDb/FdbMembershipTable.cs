@@ -139,7 +139,7 @@ public class FdbMembershipTable : IMembershipTable
 
             tx.Set(VersionKey(dir), versionData);
             tx.Set(entryKey, Serialize(entry));
-            tx.Set(MemberEtagKey(dir, entry), tx.CreateVersionStamp().ToSlice());
+            tx.SetVersionStampedValue(MemberEtagKey(dir, entry), tx.CreateVersionStamp().ToSlice());
             return true;
         });
     }
@@ -163,7 +163,7 @@ public class FdbMembershipTable : IMembershipTable
 
             tx.Set(VersionKey(dir), Serialize(tableVersion));
             tx.Set(MemberKey(dir, entry), Serialize(entry));
-            tx.Set(etagKey, tx.CreateVersionStamp().ToSlice());
+            tx.SetVersionStampedValue(etagKey, tx.CreateVersionStamp().ToSlice());
             return true;
         });
     }
