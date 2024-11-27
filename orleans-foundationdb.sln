@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Clustering.Foundati
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.FoundationDb.Tests", "Orleans.FoundationDb.Tests\Orleans.FoundationDb.Tests.csproj", "{1583538F-D7F9-444D-8175-FA03CD7FDDD3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Persistence.FoundationDb", "Orleans.Persistence.FoundationDb\Orleans.Persistence.FoundationDb.csproj", "{77600A3F-3D9A-47FB-9EBA-A4446754B57A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{1583538F-D7F9-444D-8175-FA03CD7FDDD3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1583538F-D7F9-444D-8175-FA03CD7FDDD3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1583538F-D7F9-444D-8175-FA03CD7FDDD3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{77600A3F-3D9A-47FB-9EBA-A4446754B57A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{77600A3F-3D9A-47FB-9EBA-A4446754B57A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{77600A3F-3D9A-47FB-9EBA-A4446754B57A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{77600A3F-3D9A-47FB-9EBA-A4446754B57A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

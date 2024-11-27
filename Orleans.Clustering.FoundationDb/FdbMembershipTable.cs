@@ -26,7 +26,6 @@ public class FdbMembershipTable : IMembershipTable
 
     public bool IsInitialized { get; private set; }
 
-
     async Task<int> GetVersion(IFdbReadOnlyTransaction tx)
     {
         var res = await tx.GetAsync(VersionKey(await GetDirectory(tx)));

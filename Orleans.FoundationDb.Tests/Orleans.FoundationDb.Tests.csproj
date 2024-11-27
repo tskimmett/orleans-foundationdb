@@ -12,13 +12,17 @@
     <PackageReference Include="Aspire.Hosting.Testing" Version="9.0.0" />
     <PackageReference Include="coverlet.collector" Version="6.0.2" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="Microsoft.Orleans.Core" Version="9.0.0" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../Orleans.Clustering.FoundationDb/Orleans.Clustering.FoundationDb.csproj" />
+    <ProjectReference Include="../Orleans.Persistence.FoundationDb/Orleans.Persistence.FoundationDb.csproj" />
     <ProjectReference Include="../orleans/test/TesterInternal/TesterInternal.csproj" />
+    <ProjectReference Include="../orleans/src/Orleans.Core/Orleans.Core.csproj" />
+    <ProjectReference Include="../orleans/src/Orleans.Runtime/Orleans.Runtime.csproj" />
   </ItemGroup>
 
   <ItemGroup>
