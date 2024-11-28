@@ -9,16 +9,16 @@ using UnitTests.MembershipTests;
 
 namespace Orleans.FoundationDb.Tests;
 
-public class ClusteringTests : MembershipTableTestsBase, IAsyncLifetime
+public class ClusteringTests : MembershipTableTestsBase, IClassFixture<CommonFixture>, IAsyncLifetime
 {
 	const string FdbConnectionString = "docker:docker@127.0.0.1:4500";
 
 	// each test run will be scoped to a unique fdb directory
-	string _fdbRoot = Guid.NewGuid().ToString();
+	readonly string _fdbRoot = Guid.NewGuid().ToString();
 	IFdbDatabaseProvider? _fdbProvider;
 
-	public ClusteringTests(ConnectionStringFixture fixture)
-		 : base(fixture, new(), CreateFilters())
+	public ClusteringTests(ConnectionStringFixture fixture, CommonFixture clusterFixture)
+		 : base(fixture, clusterFixture, CreateFilters())
 	{ }
 
 	private static LoggerFilterOptions CreateFilters()

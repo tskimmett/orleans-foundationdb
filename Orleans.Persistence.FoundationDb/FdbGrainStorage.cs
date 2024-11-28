@@ -8,51 +8,36 @@ using Orleans.Storage;
 
 namespace Orleans.Persistence.FoundationDb;
 
-public class FdbGrainStorage : IGrainStorage, ILifecycleParticipant<ISiloLifecycle>
+public class FdbGrainStorage(
+	string name,
+	IFdbDatabaseProvider fdb,
+	IGrainStorageSerializer grainStorageSerializer,
+	IOptions<ClusterOptions> clusterOptions,
+	ILogger<FdbGrainStorage> logger)
+	: IGrainStorage, ILifecycleParticipant<ISiloLifecycle>
 {
 	const string DirName = "orleans-grains";
-	const int MAX_VALUE_BYTES = 100_000;
+	const int MaxValueBytes = 100_000;
 
-	readonly string _name;
-	readonly IFdbDatabaseProvider _fdb;
-	readonly IGrainStorageSerializer _serializer;
-	readonly IOptions<ClusterOptions> _clusterOptions;
-	readonly ILogger<FdbGrainStorage> _logger;
+	readonly ClusterOptions _clusterOptions = clusterOptions.Value;
 
-	public FdbGrainStorage(
-		string name,
-		IFdbDatabaseProvider fdb,
-		IGrainStorageSerializer grainStorageSerializer,
-		IOptions<ClusterOptions> clusterOptions,
-		ILogger<FdbGrainStorage> logger)
-	{
-		_name = name;
-		_fdb = fdb;
-		_serializer = grainStorageSerializer;
-		_clusterOptions = clusterOptions;
-		_logger = logger;
-	}
-
-	public string ServiceId => _clusterOptions.Value.ServiceId;
+	public string ServiceId => _clusterOptions.ServiceId;
 
 	public void Participate(ISiloLifecycle lifecycle)
 	{
-		var name = OptionFormattingUtilities.Name<FdbGrainStorage>(_name);
-		lifecycle.Subscribe(name, ServiceLifecycleStage.ApplicationServices, Init);
+		var name1 = OptionFormattingUtilities.Name<FdbGrainStorage>(name);
+		lifecycle.Subscribe(name1, ServiceLifecycleStage.ApplicationServices, ct =>
+		{
+			// ensure grain state directory exists
+			return fdb.WriteAsync(tx => fdb.Root[DirName].CreateOrOpenAsync(tx), ct);
+		});
 	}
-
-	async Task Init(CancellationToken token)
-	{
-		// ensure grain state directory exists
-		await _fdb.WriteAsync(tx => _fdb.Root[DirName].CreateOrOpenAsync(tx), new());
-	}
-
 
 	public async Task ClearStateAsync<T>(string stateName, GrainId grainId, IGrainState<T> grainState)
 	{
 		try
 		{
-			await _fdb.WriteAsync(async tx =>
+			await fdb.WriteAsync(async tx =>
 			{
 				var dir = await GetDir(tx);
 				var subspace = GetGrainSubspace(dir, stateName, grainId);
@@ -70,7 +55,7 @@ public class FdbGrainStorage : IGrainStorage, ILifecycleParticipant<ISiloLifecyc
 		}
 		catch (Exception ex) when (ex is not InconsistentStateException)
 		{
-			_logger.LogError("Failed to clear grain state for {GrainType} grain with ID {GrainId}.", stateName, grainId);
+			logger.LogError("Failed to clear grain state for {GrainType} grain with ID {GrainId}.", stateName, grainId);
 			throw new FdbStorageException(
 				$"Failed to clear grain state for {stateName} with ID {grainId}. {ex.GetType()}: {ex.Message}");
 		}
@@ -80,7 +65,7 @@ public class FdbGrainStorage : IGrainStorage, ILifecycleParticipant<ISiloLifecyc
 	{
 		try
 		{
-			var (etag, data) = await _fdb.ReadAsync(async tx =>
+			var (etag, data) = await fdb.ReadAsync(async tx =>
 			{
 				var dir = await GetDir(tx);
 				var subspace = GetGrainSubspace(dir, stateName, grainId);
@@ -94,7 +79,7 @@ public class FdbGrainStorage : IGrainStorage, ILifecycleParticipant<ISiloLifecyc
 			if (grainState.RecordExists)
 			{
 				grainState.ETag = etag.ToUuid80().ToString();
-				grainState.State = _serializer.Deserialize<T>(data.Memory);
+				grainState.State = grainStorageSerializer.Deserialize<T>(data.Memory);
 			}
 			else
 			{
@@ -104,7 +89,7 @@ public class FdbGrainStorage : IGrainStorage, ILifecycleParticipant<ISiloLifecyc
 		}
 		catch (Exception ex)
 		{
-			_logger.LogError("Failed to read grain state for {GrainType} grain with ID {GrainId}.", stateName, grainId);
+			logger.LogError("Failed to read grain state for {GrainType} grain with ID {GrainId}.", stateName, grainId);
 			throw new FdbStorageException(
 				$"Failed to read grain state for {stateName} with ID {grainId}. {ex.GetType()}: {ex.Message}");
 		}
@@ -121,14 +106,14 @@ public class FdbGrainStorage : IGrainStorage, ILifecycleParticipant<ISiloLifecyc
 	{
 		try
 		{
-			var data = _serializer.Serialize(grainState.State);
-			if (data.Length >= MAX_VALUE_BYTES)
+			var data = grainStorageSerializer.Serialize(grainState.State);
+			if (data.Length >= MaxValueBytes)
 			{
 				throw new ArgumentOutOfRangeException("GrainState.Size",
-					$"Value too large to write to FoundationDB. Size={data.Length} MaxSize={MAX_VALUE_BYTES}");
+					$"Value too large to write to FoundationDB. Size={data.Length} MaxSize={MaxValueBytes}");
 			}
 
-			var db = await _fdb.GetDatabase(new());
+			var db = await fdb.GetDatabase(new());
 			VersionStamp stamp = await db.ReadWriteAsync(async tx =>
 			{
 				var dir = await GetDir(tx);
@@ -137,7 +122,7 @@ public class FdbGrainStorage : IGrainStorage, ILifecycleParticipant<ISiloLifecyc
 
 				if (storedEtag != grainState.ETag)
 					throw new InconsistentStateException(
-						$"Version conflict ({nameof(WriteStateAsync)}): ServiceId={ServiceId} ProviderName={_name} GrainType={stateName} GrainId={grainId} ETag={grainState.ETag}.");
+						$"Version conflict ({nameof(WriteStateAsync)}): ServiceId={ServiceId} ProviderName={name} GrainType={stateName} GrainId={grainId} ETag={grainState.ETag}.");
 
 				tx.SetVersionStampedValue(dir.Pack(subspace.Append("etag")), tx.CreateVersionStamp().ToSlice());
 				tx.Set(dir.Pack(subspace.Append("data")), data);
@@ -149,7 +134,7 @@ public class FdbGrainStorage : IGrainStorage, ILifecycleParticipant<ISiloLifecyc
 		}
 		catch (Exception ex) when (ex is not InconsistentStateException)
 		{
-			_logger.LogError("Failed to write grain state for {GrainType} grain with ID {GrainId}.", stateName, grainId);
+			logger.LogError("Failed to write grain state for {GrainType} grain with ID {GrainId}.", stateName, grainId);
 			throw new FdbStorageException(
 				$"Failed to write grain state for {stateName} with ID {grainId}. {ex.GetType()}: {ex.Message}");
 		}
@@ -157,6 +142,6 @@ public class FdbGrainStorage : IGrainStorage, ILifecycleParticipant<ISiloLifecyc
 
 	async Task<FdbDirectorySubspace> GetDir(IFdbReadOnlyTransaction tx)
 	{
-		return await _fdb.Root[DirName].Resolve(tx) ?? throw new Exception($"{DirName} directory does not exist.");
+		return await fdb.Root[DirName].Resolve(tx) ?? throw new Exception($"{DirName} directory does not exist.");
 	}
 }

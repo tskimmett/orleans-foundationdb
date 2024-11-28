@@ -23,6 +23,7 @@
     <ProjectReference Include="../orleans/test/TesterInternal/TesterInternal.csproj" />
     <ProjectReference Include="../orleans/src/Orleans.Core/Orleans.Core.csproj" />
     <ProjectReference Include="../orleans/src/Orleans.Runtime/Orleans.Runtime.csproj" />
+    <ProjectReference Include="..\Orleans.Reminders.FoundationDb\Orleans.Reminders.FoundationDb.csproj" />
   </ItemGroup>
 
   <ItemGroup>
