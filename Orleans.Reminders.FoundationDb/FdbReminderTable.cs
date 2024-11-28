@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using Orleans.Concurrency;
 using Orleans.Configuration;
 
 namespace Orleans.Reminders.FoundationDb;
