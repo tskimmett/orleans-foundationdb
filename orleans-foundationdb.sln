@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Persistence.Foundat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Reminders.FoundationDb", "Orleans.Reminders.FoundationDb\Orleans.Reminders.FoundationDb.csproj", "{1B8B665E-A740-47F7-8304-F6A88DA306EF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Streaming.FoundationDb", "Orleans.Streaming.FoundationDb\Orleans.Streaming.FoundationDb.csproj", "{87B9FAB1-EDAC-4309-94EA-6325F7F34E80}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{1B8B665E-A740-47F7-8304-F6A88DA306EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1B8B665E-A740-47F7-8304-F6A88DA306EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1B8B665E-A740-47F7-8304-F6A88DA306EF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{87B9FAB1-EDAC-4309-94EA-6325F7F34E80}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{87B9FAB1-EDAC-4309-94EA-6325F7F34E80}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{87B9FAB1-EDAC-4309-94EA-6325F7F34E80}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{87B9FAB1-EDAC-4309-94EA-6325F7F34E80}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
