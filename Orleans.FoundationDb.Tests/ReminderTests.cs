@@ -16,8 +16,8 @@ public class ReminderTests(
 	const string FdbConnectionString = "docker:docker@127.0.0.1:4500";
 
 	// each test run will be scoped to a unique fdb directory
-	readonly string _fdbRoot = Guid.NewGuid().ToString();
-	FdbDatabaseProvider _fdbProvider;
+	readonly string fdbRoot = Guid.NewGuid().ToString();
+	FdbDatabaseProvider fdbProvider;
 
 	static LoggerFilterOptions CreateFilters()
 	{
@@ -33,11 +33,11 @@ public class ReminderTests(
 			ConnectionOptions = new()
 			{
 				ConnectionString = GetConnectionString().Result,
-				Root = FdbPath.Absolute(_fdbRoot)
+				Root = FdbPath.Absolute(fdbRoot)
 			}
 		});
-		_fdbProvider = new FdbDatabaseProvider(options);
-		return new FdbReminderTable(clusterOptions, _fdbProvider, loggerFactory.CreateLogger<FdbReminderTable>());
+		fdbProvider = new FdbDatabaseProvider(options);
+		return new FdbReminderTable(clusterOptions, fdbProvider, loggerFactory.CreateLogger<FdbReminderTable>());
 	}
 
 	protected override Task<string> GetConnectionString() => Task.FromResult(FdbConnectionString);

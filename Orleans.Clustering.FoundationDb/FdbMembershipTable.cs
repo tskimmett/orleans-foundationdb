@@ -11,10 +11,10 @@ public class FdbMembershipTable(IFdbDatabaseProvider fdb, IOptions<ClusterOption
 	: IMembershipTable
 {
 	const string DirName = "orleans-clustering";
-	readonly ClusterOptions _clusterOptions = clusterOptions.Value;
-	readonly JsonSerializerSettings _jsonSerializerSettings = JsonSettings.JsonSerializerSettings;
+	readonly ClusterOptions clusterOptions = clusterOptions.Value;
+	readonly JsonSerializerSettings jsonSerializerSettings = JsonSettings.JsonSerializerSettings;
 
-	string ClusterId => _clusterOptions.ClusterId;
+	string ClusterId => clusterOptions.ClusterId;
 
 	public bool IsInitialized { get; private set; }
 
@@ -86,9 +86,9 @@ public class FdbMembershipTable(IFdbDatabaseProvider fdb, IOptions<ClusterOption
 		return new MembershipTableData(memberList, Deserialize<TableVersion>(version));
 	}
 
-	T Deserialize<T>(Slice data) => JsonConvert.DeserializeObject<T>(data.ToStringUtf8()!, _jsonSerializerSettings)!;
+	T Deserialize<T>(Slice data) => JsonConvert.DeserializeObject<T>(data.ToStringUtf8()!, jsonSerializerSettings)!;
 
-	Slice Serialize<T>(T item) => Slice.FromStringUtf8(JsonConvert.SerializeObject(item, _jsonSerializerSettings));
+	Slice Serialize<T>(T item) => Slice.FromStringUtf8(JsonConvert.SerializeObject(item, jsonSerializerSettings));
 
 	public async Task<MembershipTableData> ReadRow(SiloAddress key)
 	{

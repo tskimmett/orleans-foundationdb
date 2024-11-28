@@ -14,8 +14,8 @@ public class ClusteringTests : MembershipTableTestsBase, IClassFixture<CommonFix
 	const string FdbConnectionString = "docker:docker@127.0.0.1:4500";
 
 	// each test run will be scoped to a unique fdb directory
-	readonly string _fdbRoot = Guid.NewGuid().ToString();
-	IFdbDatabaseProvider? _fdbProvider;
+	readonly string fdbRoot = Guid.NewGuid().ToString();
+	IFdbDatabaseProvider? fdbProvider;
 
 	public ClusteringTests(ConnectionStringFixture fixture, CommonFixture clusterFixture)
 		 : base(fixture, clusterFixture, CreateFilters())
@@ -34,11 +34,11 @@ public class ClusteringTests : MembershipTableTestsBase, IClassFixture<CommonFix
 			ConnectionOptions = new()
 			{
 				ConnectionString = GetConnectionString().Result,
-				Root = FdbPath.Absolute(_fdbRoot)
+				Root = FdbPath.Absolute(fdbRoot)
 			}
 		});
-		_fdbProvider = new FdbDatabaseProvider(options);
-		return new FdbMembershipTable(_fdbProvider, _clusterOptions);
+		fdbProvider = new FdbDatabaseProvider(options);
+		return new FdbMembershipTable(fdbProvider, _clusterOptions);
 	}
 
 	protected override IGatewayListProvider CreateGatewayListProvider(ILogger logger)
@@ -113,9 +113,9 @@ public class ClusteringTests : MembershipTableTestsBase, IClassFixture<CommonFix
 	public Task DisposeAsync()
 	{
 		// cleanup directory
-		return _fdbProvider!.WriteAsync(async tx =>
+		return fdbProvider!.WriteAsync(async tx =>
 		{
-			await _fdbProvider!.Root.RemoveAsync(tx);
+			await fdbProvider!.Root.RemoveAsync(tx);
 		}, new());
 	}
 }

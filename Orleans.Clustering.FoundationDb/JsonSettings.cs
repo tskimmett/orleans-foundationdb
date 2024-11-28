@@ -22,10 +22,10 @@ internal static class JsonSettings
 		PreserveReferencesHandling = PreserveReferencesHandling.None,
 		MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
 		MaxDepth = 10,
-		Converters = { new IPAddressConverter(), new IPEndPointConverter(), new SiloAddressConverter(), new TableVersionConverter() }
+		Converters = { new IpAddressConverter(), new IpEndPointConverter(), new SiloAddressConverter(), new TableVersionConverter() }
 	};
 
-	private class IPAddressConverter : JsonConverter
+	private class IpAddressConverter : JsonConverter
 	{
 		public override bool CanConvert(Type objectType)
 		{
@@ -45,7 +45,7 @@ internal static class JsonSettings
 		}
 	}
 
-	private class IPEndPointConverter : JsonConverter
+	private class IpEndPointConverter : JsonConverter
 	{
 		public override bool CanConvert(Type objectType)
 		{

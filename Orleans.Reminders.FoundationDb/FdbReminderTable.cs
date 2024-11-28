@@ -13,9 +13,9 @@ public class FdbReminderTable(
 ) : IReminderTable
 {
 	const string DirName = "orleans-reminders";
-	readonly ClusterOptions _clusterOptions = clusterOptions.Value;
+	readonly ClusterOptions clusterOptions = clusterOptions.Value;
 
-	readonly JsonSerializerSettings _jsonSettings = new()
+	readonly JsonSerializerSettings jsonSettings = new()
 	{
 		DateFormatHandling = DateFormatHandling.IsoDateFormat,
 		DefaultValueHandling = DefaultValueHandling.Ignore,
@@ -104,7 +104,7 @@ public class FdbReminderTable(
 		catch (Exception ex)
 		{
 			logger.LogError(ex, "Failure reading reminder {Name} for service {ServiceId} and grain {GrainId}",
-				reminderName, _clusterOptions.ServiceId, grainId);
+				reminderName, clusterOptions.ServiceId, grainId);
 			WrappedException.CreateAndRethrow(ex);
 			throw;
 		}
@@ -173,9 +173,9 @@ public class FdbReminderTable(
 		return WriteAsync((tx, dir) => tx.ClearRange(dir));
 	}
 
-	T Deserialize<T>(Slice data) => JsonConvert.DeserializeObject<T>(data.ToStringUtf8()!, _jsonSettings)!;
+	T Deserialize<T>(Slice data) => JsonConvert.DeserializeObject<T>(data.ToStringUtf8()!, jsonSettings)!;
 
-	Slice Serialize<T>(T item) => Slice.FromStringUtf8(JsonConvert.SerializeObject(item, _jsonSettings));
+	Slice Serialize<T>(T item) => Slice.FromStringUtf8(JsonConvert.SerializeObject(item, jsonSettings));
 
 	async ValueTask<FdbDirectorySubspace> GetDirectory(IFdbReadOnlyTransaction t)
 	{

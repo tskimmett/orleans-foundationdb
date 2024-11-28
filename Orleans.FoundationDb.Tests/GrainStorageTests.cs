@@ -10,9 +10,9 @@ public class GrainStorageTests : IAsyncLifetime, IClassFixture<CommonFixture>
 {
 	const string FdbConnectionString = "docker:docker@127.0.0.1:4500";
 
-	readonly string _fdbRoot = Guid.NewGuid().ToString();
-	readonly CommonStorageTests _commonStorageTests;
-	readonly FdbDatabaseProvider _fdbProvider;
+	readonly string fdbRoot = Guid.NewGuid().ToString();
+	readonly CommonStorageTests commonStorageTests;
+	readonly FdbDatabaseProvider fdbProvider;
 
 	public GrainStorageTests(CommonFixture commonFixture)
 	{
@@ -21,11 +21,11 @@ public class GrainStorageTests : IAsyncLifetime, IClassFixture<CommonFixture>
 			ConnectionOptions = new()
 			{
 				ConnectionString = FdbConnectionString,
-				Root = FdbPath.Absolute(_fdbRoot)
+				Root = FdbPath.Absolute(fdbRoot)
 			}
 		});
-		_fdbProvider = new FdbDatabaseProvider(options);
-		_commonStorageTests = new CommonStorageTests(commonFixture.CreateFdbGrainStorage(_fdbProvider).GetAwaiter().GetResult());      
+		fdbProvider = new FdbDatabaseProvider(options);
+		commonStorageTests = new CommonStorageTests(commonFixture.CreateFdbGrainStorage(fdbProvider).GetAwaiter().GetResult());      
 	}
 
 	[SkippableFact]
@@ -43,14 +43,14 @@ public class GrainStorageTests : IAsyncLifetime, IClassFixture<CommonFixture>
 	}
 	internal Task Relational_WriteReadWriteRead100StatesInParallel()
 	{
-		return _commonStorageTests.PersistenceStorage_WriteReadWriteReadStatesInParallel(nameof(Relational_WriteReadWriteRead100StatesInParallel));
+		return commonStorageTests.PersistenceStorage_WriteReadWriteReadStatesInParallel(nameof(Relational_WriteReadWriteRead100StatesInParallel));
 	}
 
 	[SkippableFact]
 	[TestCategory("Functional")]
 	public async Task WriteReadCyrillic()
 	{
-		await _commonStorageTests.PersistenceStorage_Relational_WriteReadIdCyrillic();
+		await commonStorageTests.PersistenceStorage_Relational_WriteReadIdCyrillic();
 	}
 
 	[SkippableTheory, ClassData(typeof(StorageDataSet2CyrillicIdsAndGrainNames<string>))]
@@ -58,7 +58,7 @@ public class GrainStorageTests : IAsyncLifetime, IClassFixture<CommonFixture>
 	internal async Task DataSet2_Cyrillic_WriteClearRead(int testNum)
 	{
 		var (grainType, getGrain, grainState) = StorageDataSet2CyrillicIdsAndGrainNames<string>.GetTestData(testNum);
-		await _commonStorageTests.Store_WriteClearRead(grainType, getGrain, grainState);
+		await commonStorageTests.Store_WriteClearRead(grainType, getGrain, grainState);
 	}
 
 	[SkippableTheory, ClassData(typeof(StorageDataSetPlain<long>))]
@@ -66,7 +66,7 @@ public class GrainStorageTests : IAsyncLifetime, IClassFixture<CommonFixture>
 	internal async Task PersistenceStorage_StorageDataSetPlain_IntegerKey_WriteClearRead(int testNum)
 	{
 		var (grainType, getGrain, grainState) = StorageDataSetPlain<long>.GetTestData(testNum);
-		await _commonStorageTests.Store_WriteClearRead(grainType, getGrain, grainState);
+		await commonStorageTests.Store_WriteClearRead(grainType, getGrain, grainState);
 	}
 
 	[SkippableTheory, ClassData(typeof(StorageDataSetGeneric<Guid, string>))]
@@ -74,7 +74,7 @@ public class GrainStorageTests : IAsyncLifetime, IClassFixture<CommonFixture>
 	internal async Task StorageDataSetGeneric_GuidKey_Generic_WriteClearRead(int testNum)
 	{
 		var (grainType, getGrain, grainState) = StorageDataSetGeneric<Guid, string>.GetTestData(testNum);
-		await _commonStorageTests.Store_WriteClearRead(grainType, getGrain, grainState);
+		await commonStorageTests.Store_WriteClearRead(grainType, getGrain, grainState);
 	}
 
 	[SkippableTheory, ClassData(typeof(StorageDataSetGeneric<long, string>))]
@@ -82,7 +82,7 @@ public class GrainStorageTests : IAsyncLifetime, IClassFixture<CommonFixture>
 	internal async Task StorageDataSetGeneric_IntegerKey_Generic_WriteClearRead(int testNum)
 	{
 		var (grainType, getGrain, grainState) = StorageDataSetGeneric<long, string>.GetTestData(testNum);
-		await _commonStorageTests.Store_WriteClearRead(grainType, getGrain, grainState);
+		await commonStorageTests.Store_WriteClearRead(grainType, getGrain, grainState);
 	}
 
 	[SkippableTheory, ClassData(typeof(StorageDataSetGeneric<string, string>))]
@@ -90,7 +90,7 @@ public class GrainStorageTests : IAsyncLifetime, IClassFixture<CommonFixture>
 	internal async Task StorageDataSetGeneric_StringKey_Generic_WriteClearRead(int testNum)
 	{
 		var (grainType, getGrain, grainState) = StorageDataSetGeneric<string, string>.GetTestData(testNum);
-		await _commonStorageTests.Store_WriteClearRead(grainType, getGrain, grainState);
+		await commonStorageTests.Store_WriteClearRead(grainType, getGrain, grainState);
 	}
 
 	[SkippableTheory, ClassData(typeof(StorageDataSetGeneric<string, string>))]
@@ -98,7 +98,7 @@ public class GrainStorageTests : IAsyncLifetime, IClassFixture<CommonFixture>
 	internal async Task StorageDataSetGeneric_WriteRead(int testNum)
 	{
 		var (grainType, getGrain, grainState) = StorageDataSetGeneric<string, string>.GetTestData(testNum);
-		await _commonStorageTests.Store_WriteRead(grainType, getGrain, grainState);
+		await commonStorageTests.Store_WriteRead(grainType, getGrain, grainState);
 	}
 
 	[SkippableTheory, ClassData(typeof(StorageDataSetPlain<Guid>))]
@@ -106,7 +106,7 @@ public class GrainStorageTests : IAsyncLifetime, IClassFixture<CommonFixture>
 	internal async Task StorageDataSetPlain_GuidKey_WriteClearRead(int testNum)
 	{
 		var (grainType, getGrain, grainState) = StorageDataSetPlain<Guid>.GetTestData(testNum);
-		await _commonStorageTests.Store_WriteClearRead(grainType, getGrain, grainState);
+		await commonStorageTests.Store_WriteClearRead(grainType, getGrain, grainState);
 	}
 
 	[SkippableTheory, ClassData(typeof(StorageDataSetPlain<string>))]
@@ -114,7 +114,7 @@ public class GrainStorageTests : IAsyncLifetime, IClassFixture<CommonFixture>
 	internal async Task StorageDataSetPlain_StringKey_WriteClearRead(int testNum)
 	{
 		var (grainType, getGrain, grainState) = StorageDataSetPlain<string>.GetTestData(testNum);
-		await _commonStorageTests.Store_WriteClearRead(grainType, getGrain, grainState);
+		await commonStorageTests.Store_WriteClearRead(grainType, getGrain, grainState);
 	}
 
 	[SkippableFact]
@@ -126,22 +126,22 @@ public class GrainStorageTests : IAsyncLifetime, IClassFixture<CommonFixture>
 
 	internal async Task Relational_WriteDuplicateFailsWithInconsistentStateException()
 	{
-		var exception = await _commonStorageTests.PersistenceStorage_WriteDuplicateFailsWithInconsistentStateException();
+		var exception = await commonStorageTests.PersistenceStorage_WriteDuplicateFailsWithInconsistentStateException();
 		CommonStorageUtilities.AssertRelationalInconsistentExceptionMessage(exception.Message);
 	}
 
 	internal async Task Relational_WriteInconsistentFailsWithIncosistentStateException()
 	{
-		var exception = await _commonStorageTests.PersistenceStorage_WriteInconsistentFailsWithInconsistentStateException();
+		var exception = await commonStorageTests.PersistenceStorage_WriteInconsistentFailsWithInconsistentStateException();
 		CommonStorageUtilities.AssertRelationalInconsistentExceptionMessage(exception.Message);
 	}
 
 	public Task DisposeAsync()
 	{
 		// cleanup directory
-		return _fdbProvider!.WriteAsync(async tx =>
+		return fdbProvider!.WriteAsync(async tx =>
 		{
-			await _fdbProvider!.Root.RemoveAsync(tx);
+			await fdbProvider!.Root.RemoveAsync(tx);
 		}, new());
 	}
 

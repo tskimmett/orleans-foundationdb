@@ -19,9 +19,9 @@ public class FdbGrainStorage(
 	const string DirName = "orleans-grains";
 	const int MaxValueBytes = 100_000;
 
-	readonly ClusterOptions _clusterOptions = clusterOptions.Value;
+	readonly ClusterOptions clusterOptions = clusterOptions.Value;
 
-	public string ServiceId => _clusterOptions.ServiceId;
+	public string ServiceId => clusterOptions.ServiceId;
 
 	public void Participate(ISiloLifecycle lifecycle)
 	{
