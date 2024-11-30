@@ -26,11 +26,6 @@ public class CommonFixture : TestEnvironmentFixture
 		);
 	}
 
-	/// <summary>
-	/// Returns a correct implementation of the persistence provider according to environment variables.
-	/// </summary>
-	/// <remarks>If the environment invariants have failed to hold upon creation of the storage provider,
-	/// a <em>null</em> value will be provided.</remarks>
 	public async Task<IGrainStorage> CreateFdbGrainStorage(IFdbDatabaseProvider fdb)
 	{
 		IGrainStorageSerializer grainStorageSerializer = new OrleansGrainStorageSerializer(DefaultProviderRuntime.ServiceProvider.GetService<Serializer>());

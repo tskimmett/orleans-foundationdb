@@ -10,14 +10,14 @@ namespace Orleans.FoundationDb.Tests;
 
 public class ReminderTests(
 	ConnectionStringFixture fixture,
+	FdbFixture fdbFixture,
 	CommonFixture clusterFixture
-) : ReminderTableTestsBase(fixture, clusterFixture, CreateFilters()), IClassFixture<CommonFixture>
+) :
+	ReminderTableTestsBase(fixture, clusterFixture, CreateFilters()),
+	IClassFixture<CommonFixture>,
+	IClassFixture<FdbFixture>
 {
-	const string FdbConnectionString = "docker:docker@127.0.0.1:4500";
-
-	// each test run will be scoped to a unique fdb directory
-	readonly string fdbRoot = Guid.NewGuid().ToString();
-	FdbDatabaseProvider fdbProvider;
+	public const string FdbConnectionString = "docker:docker@127.0.0.1:4500";
 
 	static LoggerFilterOptions CreateFilters()
 	{
@@ -28,16 +28,7 @@ public class ReminderTests(
 
 	protected override IReminderTable CreateRemindersTable()
 	{
-		var options = Options.Create<FdbDatabaseProviderOptions>(new()
-		{
-			ConnectionOptions = new()
-			{
-				ConnectionString = GetConnectionString().Result,
-				Root = FdbPath.Absolute(fdbRoot)
-			}
-		});
-		fdbProvider = new FdbDatabaseProvider(options);
-		return new FdbReminderTable(clusterOptions, fdbProvider, loggerFactory.CreateLogger<FdbReminderTable>());
+		return new FdbReminderTable(clusterOptions, fdbFixture.Provider, loggerFactory.CreateLogger<FdbReminderTable>());
 	}
 
 	protected override Task<string> GetConnectionString() => Task.FromResult(FdbConnectionString);

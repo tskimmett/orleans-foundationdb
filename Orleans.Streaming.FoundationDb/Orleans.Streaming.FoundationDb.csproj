@@ -8,6 +8,11 @@
 
     <ItemGroup>
       <PackageReference Include="FoundationDB.Client" Version="7.3.0-preview2" />
+      <PackageReference Include="Microsoft.Orleans.CodeGenerator" Version="9.0.1">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+      <PackageReference Include="Microsoft.Orleans.Serialization" Version="9.0.1" />
       <PackageReference Include="Microsoft.Orleans.Streaming" Version="9.0.1" />
     </ItemGroup>
 

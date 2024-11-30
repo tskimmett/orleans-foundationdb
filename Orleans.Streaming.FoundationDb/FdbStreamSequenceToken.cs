@@ -5,6 +5,8 @@ namespace Orleans.Streaming.FoundationDb;
 [GenerateSerializer]
 public sealed class FdbStreamSequenceToken : StreamSequenceToken
 {
+	public static readonly FdbStreamSequenceToken Identity = new(0, 0);
+
 	[Id(0)]
 	public override long SequenceNumber { get; protected set; }
 
@@ -26,11 +28,13 @@ public sealed class FdbStreamSequenceToken : StreamSequenceToken
 
 	public override int CompareTo(StreamSequenceToken other)
 	{
+		if (this == Identity || other == Identity)
+			return 0;
+		
 		return other switch
 		{
 			null => throw new ArgumentNullException(nameof(other)),
-			FdbStreamSequenceToken token
-				when SequenceNumber == token.SequenceNumber => EventIndex.CompareTo(token.EventIndex),
+			FdbStreamSequenceToken token when SequenceNumber == token.SequenceNumber => EventIndex.CompareTo(token.EventIndex),
 			FdbStreamSequenceToken token => SequenceNumber.CompareTo(token.SequenceNumber),
 			_ => throw new ArgumentException("Invalid token type", nameof(other))
 		};

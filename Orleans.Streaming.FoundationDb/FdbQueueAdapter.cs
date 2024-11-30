@@ -10,11 +10,11 @@ public class FdbQueueAdapter(
 	IFdbDatabaseProvider fdb,
 	FdbQueueDataAdapter dataAdapter,
 	HashRingBasedStreamQueueMapper queueMapper,
-	ILogger<FdbQueueAdapter> logger,
 	ILoggerFactory loggerFactory
 ) : IQueueAdapter
 {
 	bool initialized = false;
+	ILogger<FdbQueueAdapter> logger = loggerFactory.CreateLogger<FdbQueueAdapter>();
 	public const string DirName = "orleans-streaming";
 
 	public string Name { get; } = providerName;
@@ -35,7 +35,7 @@ public class FdbQueueAdapter(
 			var dir = initialized
 				? await streamingDir.Resolve(tx)
 				: await streamingDir.CreateOrOpenAsync(tx);
-			tx.SetVersionStampedKey(dir!.Encode(queueId, tx.CreateVersionStamp().ToSlice()), message);
+			tx.SetVersionStampedKey(dir!.Encode(queueId, tx.CreateVersionStamp()), message);
 		}, new());
 		initialized = true;
 	}

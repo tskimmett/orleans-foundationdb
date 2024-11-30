@@ -1,7 +1,4 @@
-using FoundationDB.Client;
-using FoundationDB.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Orleans.Clustering.FoundationDb;
 using Orleans.Messaging;
 using UnitTests;
@@ -9,19 +6,16 @@ using UnitTests.MembershipTests;
 
 namespace Orleans.FoundationDb.Tests;
 
-public class ClusteringTests : MembershipTableTestsBase, IClassFixture<CommonFixture>, IAsyncLifetime
+public class ClusteringTests(
+	ConnectionStringFixture fixture,
+	CommonFixture clusterFixture,
+	FdbFixture fdbFixture)
+	:
+		MembershipTableTestsBase(fixture, clusterFixture, CreateFilters()),
+		IClassFixture<CommonFixture>,
+		IClassFixture<FdbFixture>
 {
-	const string FdbConnectionString = "docker:docker@127.0.0.1:4500";
-
-	// each test run will be scoped to a unique fdb directory
-	readonly string fdbRoot = Guid.NewGuid().ToString();
-	IFdbDatabaseProvider? fdbProvider;
-
-	public ClusteringTests(ConnectionStringFixture fixture, CommonFixture clusterFixture)
-		 : base(fixture, clusterFixture, CreateFilters())
-	{ }
-
-	private static LoggerFilterOptions CreateFilters()
+	static LoggerFilterOptions CreateFilters()
 	{
 		var filters = new LoggerFilterOptions();
 		return filters;
@@ -29,27 +23,17 @@ public class ClusteringTests : MembershipTableTestsBase, IClassFixture<CommonFix
 
 	protected override IMembershipTable CreateMembershipTable(ILogger logger)
 	{
-		var options = Options.Create<FdbDatabaseProviderOptions>(new()
-		{
-			ConnectionOptions = new()
-			{
-				ConnectionString = GetConnectionString().Result,
-				Root = FdbPath.Absolute(fdbRoot)
-			}
-		});
-		fdbProvider = new FdbDatabaseProvider(options);
-		return new FdbMembershipTable(fdbProvider, _clusterOptions);
+		return new FdbMembershipTable(fdbFixture.Provider, _clusterOptions);
 	}
 
 	protected override IGatewayListProvider CreateGatewayListProvider(ILogger logger)
 	{
 		return new FdbGatewayListProvider(
-			 (FdbMembershipTable)CreateMembershipTable(logger),
-			 _gatewayOptions);
+			(FdbMembershipTable)CreateMembershipTable(logger),
+			_gatewayOptions);
 	}
 
-	protected override Task<string> GetConnectionString()
-		 => Task.FromResult(FdbConnectionString);
+	protected override Task<string> GetConnectionString() => Task.FromResult("unused");
 
 	[SkippableFact]
 	public async Task GetGateways()
@@ -103,19 +87,5 @@ public class ClusteringTests : MembershipTableTestsBase, IClassFixture<CommonFix
 	public async Task CleanupDefunctSiloEntries()
 	{
 		await MembershipTable_CleanupDefunctSiloEntries(false);
-	}
-
-	public Task InitializeAsync()
-	{
-		return Task.CompletedTask;
-	}
-
-	public Task DisposeAsync()
-	{
-		// cleanup directory
-		return fdbProvider!.WriteAsync(async tx =>
-		{
-			await fdbProvider!.Root.RemoveAsync(tx);
-		}, new());
 	}
 }

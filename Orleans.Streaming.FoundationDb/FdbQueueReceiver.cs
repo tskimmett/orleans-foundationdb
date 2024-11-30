@@ -15,6 +15,7 @@ public class FdbQueueReceiver(
 
 	bool isShutdown = false;
 	readonly string queueKey = queueId.ToString();
+	VersionStamp? lastRead;
 	Task outstandingTask = Task.CompletedTask;
 
 	public async Task Initialize(TimeSpan timeout)
@@ -38,19 +39,27 @@ public class FdbQueueReceiver(
 
 		try
 		{
-			var results = fdb.ReadWriteAsync(async tx =>
+			var results = fdb.ReadAsync(async tx =>
 			{
 				var dir = await fdb.Root[FdbQueueAdapter.DirName].Resolve(tx);
-				var range = (await tx
-						.GetRange(dir!.EncodeRange(queueKey), new() { Limit = maxCount, TargetBytes = MaxDequeueBytes })
-						.ToListAsync())
-					.Select(x => (stamp: dir!.DecodeLast<VersionStamp>(x.Key), data: x.Value));
-				return range;
+				var rangeOptions = new FdbRangeOptions { Limit = maxCount > 0 ? maxCount : null, TargetBytes = MaxDequeueBytes };
+				var rangeStart = lastRead.HasValue
+					? dir!.Encode(queueKey, lastRead) + 1
+					: dir!.Encode(queueKey);
+				var range = await tx.GetRange(
+					rangeStart,
+					dir!.EncodeRange(queueKey).End,
+					rangeOptions
+				).ToListAsync();
+				return range.Select(x => (stamp: dir!.DecodeLast<VersionStamp>(x.Key), data: x.Value));
 			}, new());
 
 			outstandingTask = results;
 
-			return (await results)
+			var messages = (await results).ToList();
+			if (messages.Count != 0)
+				lastRead = messages.LastOrDefault().stamp;
+			return messages
 				.Select(msg => dataAdapter.FromQueueMessage(msg.stamp, msg.data))
 				.ToList();
 		}
