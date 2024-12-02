@@ -13,7 +13,7 @@ public class FdbQueueReceiver(
 {
 	const int MaxDequeueBytes = 1_000_000;
 
-	bool isShutdown = false;
+	bool isShutdown;
 	readonly string queueKey = queueId.ToString();
 	VersionStamp? lastRead;
 	Task outstandingTask = Task.CompletedTask;
@@ -59,7 +59,7 @@ public class FdbQueueReceiver(
 
 			outstandingTask = results;
 
-			var messages = (await results).ToList();
+			var messages = (await results ?? throw new InvalidOperationException()).ToList();
 			if (messages.Count != 0)
 				lastRead = messages.LastOrDefault().stamp;
 			return messages

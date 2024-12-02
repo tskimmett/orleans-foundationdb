@@ -7,22 +7,23 @@ namespace Orleans.Streaming.FoundationDb;
 
 [Serializable]
 [GenerateSerializer]
-public class FdbQueueBatchContainer : IBatchContainer
+public class FdbQueueBatchContainer(StreamId streamId, List<object> events, Dictionary<string, object> requestContext)
+	: IBatchContainer
 {
 	[JsonProperty]
 	[Id(0)]
-	FdbStreamSequenceToken sequenceToken;
+	FdbStreamSequenceToken sequenceToken = null!;
 
 	[JsonProperty]
 	[Id(1)]
-	readonly List<object> events;
+	readonly List<object> events = events ?? throw new ArgumentNullException(nameof(events), "Message contains no events");
 
 	[JsonProperty]
 	[Id(2)]
-	readonly Dictionary<string, object> requestContext;
+	readonly Dictionary<string, object> requestContext = requestContext;
 
 	[Id(3)]
-	public StreamId StreamId { get; }
+	public StreamId StreamId { get; } = streamId;
 
 	public StreamSequenceToken SequenceToken => sequenceToken;
 
@@ -42,13 +43,6 @@ public class FdbQueueBatchContainer : IBatchContainer
 		: this(streamId, events, requestContext)
 	{
 		this.sequenceToken = sequenceToken;
-	}
-
-	public FdbQueueBatchContainer(StreamId streamId, List<object> events, Dictionary<string, object> requestContext)
-	{
-		StreamId = streamId;
-		this.events = events ?? throw new ArgumentNullException(nameof(events), "Message contains no events");
-		this.requestContext = requestContext;
 	}
 
 	public IEnumerable<Tuple<T, StreamSequenceToken>> GetEvents<T>()
