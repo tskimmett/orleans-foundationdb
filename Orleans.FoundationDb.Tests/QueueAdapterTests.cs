@@ -140,7 +140,7 @@ public class QueueAdapterTests : IClassFixture<FdbFixture>
 				// read all messages in cache for stream
 				IQueueCacheCursor cursor = qCache.GetCacheCursor(streamGuid, firstInCache);
 				int messageCount = 0;
-				StreamSequenceToken tenthInCache = null;
+				StreamSequenceToken? tenthInCache = null;
 				StreamSequenceToken lastToken = firstInCache;
 				while (cursor.MoveNext())
 				{

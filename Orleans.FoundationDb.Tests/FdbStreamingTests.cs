@@ -15,19 +15,12 @@ using Xunit.Abstractions;
 
 namespace Orleans.FoundationDb.Tests
 {
-	public class FdbStreamingTests : TestClusterPerTest
+	public class FdbStreamingTests(ITestOutputHelper output) : TestClusterPerTest
 	{
-		readonly FdbFixture fdbFixture;
 		public const string FdbStreamProviderName = "FdbQueueProvider";
 		public const string SmsStreamProviderName = StreamTestsConstants.SMS_STREAM_PROVIDER_NAME;
-		SingleStreamTestRunner runner;
-		const int queueCount = 8;
-		ITestOutputHelper output;
-
-		public FdbStreamingTests(ITestOutputHelper output)
-		{
-			this.output = output;
-		}
+		SingleStreamTestRunner runner = null!;
+		ITestOutputHelper output = output;
 
 		protected override void ConfigureTestCluster(TestClusterBuilder builder)
 		{

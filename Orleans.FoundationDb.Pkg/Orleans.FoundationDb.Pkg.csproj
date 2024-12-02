@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+
+		<PackageId>Orleans.Providers.FoundationDb</PackageId>
+		<Version>0.1.0</Version>
+		<Authors>Taylor Kimmett</Authors>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Orleans.Clustering.FoundationDb\Orleans.Clustering.FoundationDb.csproj"/>
+		<ProjectReference Include="..\Orleans.Persistence.FoundationDb\Orleans.Persistence.FoundationDb.csproj"/>
+		<ProjectReference Include="..\Orleans.Reminders.FoundationDb\Orleans.Reminders.FoundationDb.csproj"/>
+		<ProjectReference Include="..\Orleans.Streaming.FoundationDb\Orleans.Streaming.FoundationDb.csproj"/>
+	</ItemGroup>
+
+</Project>

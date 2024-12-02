@@ -9,12 +9,7 @@ public static class SiloBuilderExtensions
 {
 	public static ISiloBuilder AddFdbGrainStorage(this ISiloBuilder builder, string name)
 	{
-		return builder.ConfigureServices(serviceCollection => serviceCollection.AddFdbGrainStorage(name));
-	}
-
-	internal static IServiceCollection AddFdbGrainStorage(this IServiceCollection serviceCollection, string name)
-	{
-		return serviceCollection.AddGrainStorage(name, GrainStorageFactory);
+		return builder.ConfigureServices(serviceCollection => serviceCollection.AddGrainStorage(name, GrainStorageFactory));
 	}
 
 	static FdbGrainStorage GrainStorageFactory(IServiceProvider services, string name)
