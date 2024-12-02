@@ -41,6 +41,9 @@ public class FdbQueueReceiver(
 		{
 			var results = fdb.ReadAsync(async tx =>
 			{
+				if (isShutdown)
+					return null;
+				
 				var dir = await fdb.Root[FdbQueueAdapter.DirName].Resolve(tx);
 				var rangeOptions = new FdbRangeOptions { Limit = maxCount > 0 ? maxCount : null, TargetBytes = MaxDequeueBytes };
 				var rangeStart = lastRead.HasValue
@@ -106,7 +109,7 @@ public class FdbQueueReceiver(
 
 	public async Task Shutdown(TimeSpan timeout)
 	{
-		await outstandingTask;
 		isShutdown = true;
+		await outstandingTask;
 	}
 }

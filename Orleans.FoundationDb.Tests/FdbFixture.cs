@@ -8,7 +8,7 @@ public class FdbFixture : IAsyncLifetime
 {
 	public const string FdbConnectionString = "docker:docker@127.0.0.1:4500";
 	readonly string fdbRoot = Guid.NewGuid().ToString();
-	readonly FdbDatabaseProvider providerProvider;
+	readonly FdbDatabaseProvider fdb;
 
 	public FdbFixture()
 	{
@@ -20,10 +20,10 @@ public class FdbFixture : IAsyncLifetime
 				Root = FdbPath.Absolute(fdbRoot)
 			}
 		});
-		providerProvider = new FdbDatabaseProvider(options);
+		fdb = new FdbDatabaseProvider(options);
 	}
 
-	public FdbDatabaseProvider Provider => providerProvider;
+	public FdbDatabaseProvider Provider => fdb;
 
 	public void Dispose()
 	{
@@ -37,6 +37,6 @@ public class FdbFixture : IAsyncLifetime
 	public Task DisposeAsync()
 	{
 		// cleanup directory
-		return providerProvider.WriteAsync(tx => providerProvider!.Root.RemoveAsync(tx), new());
+		return fdb.WriteAsync(tx => fdb!.Root.RemoveAsync(tx), new());
 	}
 }
