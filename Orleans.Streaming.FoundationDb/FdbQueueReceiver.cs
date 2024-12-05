@@ -39,23 +39,15 @@ public class FdbQueueReceiver(
 
 		try
 		{
-			var results = fdb.ReadAsync(async tx =>
-			{
-				if (isShutdown)
-					return null;
-				
-				var dir = await fdb.Root[FdbQueueAdapter.DirName].Resolve(tx);
-				var rangeOptions = new FdbRangeOptions { Limit = maxCount > 0 ? maxCount : null, TargetBytes = MaxDequeueBytes };
-				var rangeStart = lastRead.HasValue
-					? dir!.Encode(queueKey, lastRead) + 1
-					: dir!.Encode(queueKey);
-				var range = await tx.GetRange(
-					rangeStart,
-					dir!.EncodeRange(queueKey).End,
-					rangeOptions
-				).ToListAsync();
-				return range.Select(x => (stamp: dir!.DecodeLast<VersionStamp>(x.Key), data: x.Value));
-			}, new());
+			if (isShutdown)
+				return null;
+			
+			CancellationToken ct = new();
+			var db = await fdb.GetDatabase(ct);
+			using var tx = db.BeginReadOnlyTransaction(ct)
+				.WithOptions(o => o.WithTracing(FdbTracingOptions.None));	// too noisy to be useful
+
+			var results = DequeueMessages(tx);
 
 			outstandingTask = results;
 
@@ -75,10 +67,27 @@ public class FdbQueueReceiver(
 		{
 			outstandingTask = Task.CompletedTask;
 		}
+
+		async Task<IEnumerable<(VersionStamp stamp, Slice data)>> DequeueMessages(IFdbReadOnlyTransaction tr)
+		{
+			var dir = await fdb.Root[FdbQueueAdapter.DirName].Resolve(tr);
+			var rangeOptions = new FdbRangeOptions { Limit = maxCount > 0 ? maxCount : null, TargetBytes = MaxDequeueBytes };
+			var rangeStart = lastRead.HasValue
+				? dir!.Encode(queueKey, lastRead) + 1
+				: dir!.Encode(queueKey);
+			var range = await tr.GetRange(
+				beginKeyInclusive: rangeStart,
+				endKeyExclusive: dir!.EncodeRange(queueKey).End,
+				rangeOptions
+			).ToListAsync();
+			return range.Select(x => (stamp: dir!.DecodeLast<VersionStamp>(x.Key), data: x.Value));
+		}
 	}
 
 	public async Task MessagesDeliveredAsync(IList<IBatchContainer> messages)
 	{
+		logger.LogDebug("MessagesDeliveredAsync");
+
 		if (isShutdown || messages.Count == 0)
 			return;
 

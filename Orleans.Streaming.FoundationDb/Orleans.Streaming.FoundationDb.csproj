@@ -1,19 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-    </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<IsPackable>true</IsPackable>
+		<PackageId>Orleans.Streaming.FoundationDb</PackageId>
+		<Version>0.1.1</Version>
+		<Authors>Taylor Kimmett</Authors>
+	</PropertyGroup>
 
-    <ItemGroup>
-      <PackageReference Include="FoundationDB.Client" Version="7.3.0-preview2" />
-      <PackageReference Include="Microsoft.Orleans.CodeGenerator" Version="9.0.1">
-        <PrivateAssets>all</PrivateAssets>
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      </PackageReference>
-      <PackageReference Include="Microsoft.Orleans.Serialization" Version="9.0.1" />
-      <PackageReference Include="Microsoft.Orleans.Streaming" Version="9.0.1" />
-    </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="FoundationDB.Client" Version="7.3.0-preview2"/>
+		<PackageReference Include="Microsoft.Orleans.CodeGenerator" Version="9.0.1">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Microsoft.Orleans.Serialization" Version="9.0.1"/>
+		<PackageReference Include="Microsoft.Orleans.Streaming" Version="9.0.1"/>
+	</ItemGroup>
 
 </Project>

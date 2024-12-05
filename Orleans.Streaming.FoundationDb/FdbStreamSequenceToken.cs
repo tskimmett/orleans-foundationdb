@@ -47,4 +47,9 @@ public sealed class FdbStreamSequenceToken : StreamSequenceToken
 	}
 
 	public VersionStamp ToVersionStamp() => VersionStamp.Complete((ulong)SequenceNumber, (ushort)EventIndex);
+
+	public override string ToString()
+	{
+		return $"{SequenceNumber}--{EventIndex}";
+	}
 }
