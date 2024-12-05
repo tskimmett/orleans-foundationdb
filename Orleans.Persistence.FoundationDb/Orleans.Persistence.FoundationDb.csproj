@@ -1,14 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<IsPackable>true</IsPackable>
+		<PackageId>Orleans.Persistence.FoundationDb</PackageId>
+		<Version>0.1.0</Version>
+		<Authors>Taylor Kimmett</Authors>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="FoundationDB.Client" Version="7.3.0-preview2" />
-    <PackageReference Include="Microsoft.Orleans.Runtime" Version="9.0.1" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="FoundationDB.Client" Version="7.3.0-preview2"/>
+		<PackageReference Include="Microsoft.Orleans.Runtime" Version="9.0.1"/>
+	</ItemGroup>
 
 </Project>
