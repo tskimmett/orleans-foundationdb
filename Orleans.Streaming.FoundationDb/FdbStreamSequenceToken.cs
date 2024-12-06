@@ -15,9 +15,8 @@ public sealed class FdbStreamSequenceToken : StreamSequenceToken
 
 	public FdbStreamSequenceToken(VersionStamp fdbStamp)
 	{
-		var (idx, seq) = fdbStamp.ToUuid80();
-		SequenceNumber = (long)seq; // shouldn't be a big deal to go from ulong->long
-		EventIndex = idx;
+		SequenceNumber = (long)fdbStamp.TransactionVersion;
+		EventIndex = fdbStamp.TransactionOrder;
 	}
 
 	public FdbStreamSequenceToken(long sequenceNumber, int eventIndex)
@@ -50,6 +49,6 @@ public sealed class FdbStreamSequenceToken : StreamSequenceToken
 
 	public override string ToString()
 	{
-		return $"{SequenceNumber}--{EventIndex}";
+		return $"{SequenceNumber}-{EventIndex}";
 	}
 }

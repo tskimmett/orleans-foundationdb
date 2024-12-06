@@ -86,25 +86,26 @@ public class FdbQueueReceiver(
 
 	public async Task MessagesDeliveredAsync(IList<IBatchContainer> messages)
 	{
-		logger.LogDebug("MessagesDeliveredAsync");
-
 		if (isShutdown || messages.Count == 0)
 			return;
 
 		var keysToClear = messages
 			.OfType<FdbQueueBatchContainer>()
-			.Select(batch => batch.RealSequenceToken.ToVersionStamp().ToSlice())
+			.Select(batch => batch.RealSequenceToken.ToVersionStamp())
 			.ToList();
 
 		try
 		{
-			outstandingTask = fdb.WriteAsync(tx =>
+			outstandingTask = fdb.WriteAsync(async tx =>
 			{
+				var dir = await fdb.Root[FdbQueueAdapter.DirName].Resolve(tx);
 				foreach (var key in keysToClear)
-					tx.Clear(key);
+					tx.Clear(dir!.Encode(queueKey, key));
 			}, new());
 
 			await outstandingTask;
+			
+			logger.LogDebug("Acknowledged {MessageCount} messages by removing from queue {QueueId}", keysToClear, queueId);
 		}
 		catch (Exception exc)
 		{
