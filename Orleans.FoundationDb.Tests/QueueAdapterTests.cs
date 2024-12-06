@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Globalization;
+using FoundationDB.Client;
 using Microsoft.Extensions.Logging;
 using Orleans.Configuration;
 using Orleans.Providers.Streams.Common;
@@ -91,7 +92,7 @@ public class QueueAdapterTests : IClassFixture<FdbFixture>
 					foreach (IBatchContainer message in messages)
 					{
 						streamStarts.TryAdd(queueId, message.SequenceToken);
-						
+
 						streamsPerQueue.AddOrUpdate(queueId,
 							id => new HashSet<StreamId> { message.StreamId },
 							(id, set) =>
@@ -134,6 +135,7 @@ public class QueueAdapterTests : IClassFixture<FdbFixture>
 			var receiver = receivers[kvp.Key];
 			var qCache = caches[kvp.Key];
 			StreamSequenceToken firstInCache = streamStarts[kvp.Key];
+			List<IBatchContainer> ackedMessages = [];
 
 			foreach (StreamId streamGuid in kvp.Value)
 			{
@@ -147,6 +149,7 @@ public class QueueAdapterTests : IClassFixture<FdbFixture>
 					Exception ex;
 					messageCount++;
 					IBatchContainer batch = cursor.GetCurrent(out ex);
+					ackedMessages.Add(batch);
 					output.WriteLine("Token: {0}", batch.SequenceToken);
 					Assert.True(batch.SequenceToken.CompareTo(lastToken) >= 0, $"order check for event {messageCount}");
 					lastToken = batch.SequenceToken;
@@ -167,14 +170,24 @@ public class QueueAdapterTests : IClassFixture<FdbFixture>
 				while (cursor.MoveNext())
 				{
 					messageCount++;
+					ackedMessages.Add(cursor.GetCurrent(out _));
 				}
 
 				output.WriteLine("On Queue {0} we received a total of {1} message on stream {2} after 10th", kvp.Key,
 					messageCount, streamGuid);
 				const int expected = NumBatches / 2 - 10 + 1; // all except the first 10, including the 10th (10 + 1)
 				Assert.Equal(expected, messageCount);
+
+				await receiver.MessagesDeliveredAsync(ackedMessages);
 			}
 		}
+
+		var messagesInQueue = await fdbFixture.Provider.ReadAsync(async tx =>
+		{
+			var dir = await fdbFixture.Provider.Root["orleans-streaming"].Resolve(tx);
+			return await tx.GetRangeKeys(dir!.ToRange()).CountAsync();
+		}, new());
+		Assert.Equal(0, messagesInQueue);
 	}
 
 	List<object> CreateEvents(int count)
@@ -188,12 +201,5 @@ public class QueueAdapterTests : IClassFixture<FdbFixture>
 
 			return Random.Shared.Next(int.MaxValue).ToString(CultureInfo.InvariantCulture);
 		}).ToList();
-	}
-
-	internal static string MakeClusterId()
-	{
-		const string deploymentIdFormat = "cluster-{0}";
-		string now = DateTime.UtcNow.ToString("yyyy-MM-dd-hh-mm-ss-ffff");
-		return string.Format(deploymentIdFormat, now);
 	}
 }

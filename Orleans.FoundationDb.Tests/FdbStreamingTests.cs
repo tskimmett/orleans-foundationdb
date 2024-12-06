@@ -214,19 +214,19 @@ namespace Orleans.FoundationDb.Tests
 		        this.HostedCluster.StopSilo);
 		}*/
 
-		[SkippableFact]
-		public async Task FDB_19_ConsumerImplicitlySubscribedToProducerClient()
-		{
-			// todo: currently, the Azure queue queue adaptor doesn't support namespaces, so this test will fail.
-			await runner.StreamTest_19_ConsumerImplicitlySubscribedToProducerClient();
-		}
+		// [SkippableFact]
+		// public async Task FDB_19_ConsumerImplicitlySubscribedToProducerClient()
+		// {
+		// 	// todo: currently, the Azure queue queue adaptor doesn't support namespaces, so this test will fail.
+		// 	await runner.StreamTest_19_ConsumerImplicitlySubscribedToProducerClient();
+		// }
 
-		[SkippableFact]
-		public async Task FDB_20_ConsumerImplicitlySubscribedToProducerGrain()
-		{
-			// todo: currently, the Azure queue queue adaptor doesn't support namespaces, so this test will fail.
-			await runner.StreamTest_20_ConsumerImplicitlySubscribedToProducerGrain();
-		}
+		// [SkippableFact]
+		// public async Task FDB_20_ConsumerImplicitlySubscribedToProducerGrain()
+		// {
+		// 	// todo: currently, the Azure queue queue adaptor doesn't support namespaces, so this test will fail.
+		// 	await runner.StreamTest_20_ConsumerImplicitlySubscribedToProducerGrain();
+		// }
 
 		[SkippableFact(Skip = "Ignored"), TestCategory("Failures")]
 		public async Task FDB_21_GenericConsumerImplicitlySubscribedToProducerGrain()

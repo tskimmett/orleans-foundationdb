@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<IsPackable>true</IsPackable>
 		<PackageId>Orleans.Clustering.FoundationDb</PackageId>
-		<Version>0.1.0</Version>
+		<Version>0.1.2</Version>
 		<Authors>Taylor Kimmett</Authors>
 	</PropertyGroup>
 
